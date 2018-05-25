@@ -2740,10 +2740,10 @@ bool CApplication::Cleanup()
     m_screensaverInhibitor.Release();
 
     if (!IsHeadless()) {
-      CServiceBroker::GetRenderSystem().DestroyRenderSystem();
-      CServiceBroker::GetWinSystem().DestroyWindow();
-      CServiceBroker::GetWinSystem().DestroyWindowSystem();
-      g_windowManager.DestroyWindows();
+      CServiceBroker::GetRenderSystem()->DestroyRenderSystem();
+      CServiceBroker::GetWinSystem()->DestroyWindow();
+      CServiceBroker::GetWinSystem()->DestroyWindowSystem();
+      CServiceBroker::GetGUI()->GetWindowManager().DestroyWindows();
     }
 
     CLog::Log(LOGNOTICE, "unload sections");

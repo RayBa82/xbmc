@@ -324,7 +324,7 @@ public:
 
   void SetHeadless(bool value)
   {
-     _headless = value;
+     m_headless = value;
   }
 
   bool IsHeadless() const

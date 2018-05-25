@@ -351,6 +351,9 @@ void CSettingConditions::Initialize(const CProfilesManager &profileManager)
     m_simpleConditions.insert("isstandalone");
 #endif
 
+  if (g_application.IsHeadless())
+    m_simpleConditions.insert("is_headless");
+
   m_simpleConditions.insert("has_ae_quality_levels");
 
 #ifdef HAS_WEB_SERVER

@@ -185,7 +185,8 @@ void CGUIDialog::Open_Internal(bool bProcessRenderLoop, const std::string &param
   CSingleLock lock(CServiceBroker::GetWinSystem()->GetGfxContext());
 
   if (!CServiceBroker::GetGUI()->GetWindowManager().Initialized() ||
-      (m_active && !m_closing && !IsAnimating(ANIM_TYPE_WINDOW_CLOSE)))
+      (m_active && !m_closing && !IsAnimating(ANIM_TYPE_WINDOW_CLOSE)) ||
+      g_application.IsHeadless())
     return;
 
   // set running before it's added to the window manager, else the auto-show code

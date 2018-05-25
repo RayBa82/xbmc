@@ -269,6 +269,7 @@ CApplication::CApplication(void)
   , m_pInertialScrollingHandler(new CInertialScrollingHandler())
   , m_WaitingExternalCalls(0)
   , m_ProcessedExternalCalls(0)
+  , m_headless(false)
   , m_playerEvent(true, true)
 {
   TiXmlBase::SetCondenseWhiteSpace(false);
@@ -392,7 +393,7 @@ bool CApplication::Create(const CAppParamParser &params)
 
   m_ServiceManager.reset(new CServiceManager());
 
-  if (!m_ServiceManager->InitStageOne())
+  if (!IsHeadless() && !m_ServiceManager->InitStageOne())
   {
     return false;
   }
@@ -697,7 +698,8 @@ bool CApplication::CreateGUI()
   m_pGUI->Init();
 
   // Splash requires gui component!!
-  CServiceBroker::GetRenderSystem()->ShowSplash("");
+  if (!IsHeadless())
+    CServiceBroker::GetRenderSystem()->ShowSplash("");
 
   // The key mappings may already have been loaded by a peripheral
   CLog::Log(LOGINFO, "load keymapping");
@@ -1042,7 +1044,7 @@ bool CApplication::Initialize()
   int iDots = 1;
   while (!event.WaitMSec(1000))
   {
-    if (databaseManager.IsUpgrading())
+    if (databaseManager.IsUpgrading() && !IsHeadless())
       CServiceBroker::GetRenderSystem()->ShowSplash(std::string(iDots, ' ') + localizedStr + std::string(iDots, '.'));
 
     if (iDots == 3)
@@ -1050,7 +1052,8 @@ bool CApplication::Initialize()
     else
       ++iDots;
   }
-  CServiceBroker::GetRenderSystem()->ShowSplash("");
+  if (!IsHeadless())
+    CServiceBroker::GetRenderSystem()->ShowSplash("");
 
   StartServices();
 
@@ -1078,14 +1081,15 @@ bool CApplication::Initialize()
     iDots = 1;
     while (!event.WaitMSec(1000))
     {
-      if (isMigratingAddons)
+      if (isMigratingAddons && !IsHeadless())
         CServiceBroker::GetRenderSystem()->ShowSplash(std::string(iDots, ' ') + localizedStr + std::string(iDots, '.'));
       if (iDots == 3)
         iDots = 1;
       else
         ++iDots;
     }
-    CServiceBroker::GetRenderSystem()->ShowSplash("");
+    if (!IsHeadless())
+      CServiceBroker::GetRenderSystem()->ShowSplash("");
     m_incompatibleAddons = incompatibleAddons;
     m_confirmSkinChange = true;
 
@@ -1805,7 +1809,7 @@ bool CApplication::LoadCustomWindows()
 void CApplication::Render()
 {
   // do not render if we are stopped or in background
-  if (m_bStop)
+  if (m_bStop || IsHeadless())
     return;
 
   bool hasRendered = false;
@@ -2489,13 +2493,13 @@ void CApplication::OnApplicationMessage(ThreadMessage* pMsg)
     // stop playing file
     if (m_appPlayer.IsPlayingVideo()) StopPlaying();
 
-    if (CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindow() == WINDOW_FULLSCREEN_VIDEO)
+    if (!IsHeadless() && CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindow() == WINDOW_FULLSCREEN_VIDEO)
       CServiceBroker::GetGUI()->GetWindowManager().PreviousWindow();
 
     ResetScreenSaver();
     WakeUpScreenSaverAndDPMS();
 
-    if (CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindow() != WINDOW_SLIDESHOW)
+    if (!IsHeadless() && CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindow() != WINDOW_SLIDESHOW)
       CServiceBroker::GetGUI()->GetWindowManager().ActivateWindow(WINDOW_SLIDESHOW);
     if (URIUtils::IsZIP(pMsg->strParam) || URIUtils::IsRAR(pMsg->strParam)) // actually a cbz/cbr
     {
@@ -2551,7 +2555,7 @@ void CApplication::OnApplicationMessage(ThreadMessage* pMsg)
       pSlideShow->StartSlideShow(); //Start the slideshow!
     }
 
-    if (CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindow() != WINDOW_SLIDESHOW)
+    if (!IsHeadless() && CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindow() != WINDOW_SLIDESHOW)
     {
       if (items.Size() == 0)
       {
@@ -2631,7 +2635,7 @@ void CApplication::FrameMove(bool processEvents, bool processGUI)
     if( frameTime > 0.5 )
       frameTime = 0.5;
 
-    if (processGUI && m_renderGUI)
+    if (processGUI && m_renderGUI && !IsHeadless())
     {
       CSingleLock lock(CServiceBroker::GetWinSystem()->GetGfxContext());
       // check if there are notifications to display
@@ -2692,7 +2696,7 @@ void CApplication::FrameMove(bool processEvents, bool processGUI)
       m_skipGuiRender = true;
 #endif
 
-    if (g_advancedSettings.m_guiSmartRedraw && m_guiRefreshTimer.IsTimePast())
+    if (!IsHeadless() && g_advancedSettings.m_guiSmartRedraw && m_guiRefreshTimer.IsTimePast())
     {
       CServiceBroker::GetGUI()->GetWindowManager().SendMessage(GUI_MSG_REFRESH_TIMER, 0, 0);
       m_guiRefreshTimer.Set(500);
@@ -2700,10 +2704,11 @@ void CApplication::FrameMove(bool processEvents, bool processGUI)
 
     if (!m_bStop)
     {
-      if (!m_skipGuiRender)
+      if (!m_skipGuiRender && !IsHeadless())
         CServiceBroker::GetGUI()->GetWindowManager().Process(CTimeUtils::GetFrameTime());
     }
-    CServiceBroker::GetGUI()->GetWindowManager().FrameMove();
+    if (!IsHeadless())
+      CServiceBroker::GetGUI()->GetWindowManager().FrameMove();
   }
 
   m_appPlayer.FrameMove();
@@ -2734,10 +2739,12 @@ bool CApplication::Cleanup()
     m_globalScreensaverInhibitor.Release();
     m_screensaverInhibitor.Release();
 
-    CServiceBroker::GetRenderSystem()->DestroyRenderSystem();
-    CServiceBroker::GetWinSystem()->DestroyWindow();
-    CServiceBroker::GetWinSystem()->DestroyWindowSystem();
-    CServiceBroker::GetGUI()->GetWindowManager().DestroyWindows();
+    if (!IsHeadless()) {
+      CServiceBroker::GetRenderSystem().DestroyRenderSystem();
+      CServiceBroker::GetWinSystem().DestroyWindow();
+      CServiceBroker::GetWinSystem().DestroyWindowSystem();
+      g_windowManager.DestroyWindows();
+    }
 
     CLog::Log(LOGNOTICE, "unload sections");
 

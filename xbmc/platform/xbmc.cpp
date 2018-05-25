@@ -62,7 +62,7 @@ extern "C" int XBMC_Run(bool renderGUI, const CAppParamParser &params)
   CXBMCApp::get()->Initialize();
 #endif
 
-  if (renderGUI && !g_application.CreateGUI())
+  if (renderGUI && !g_application.IsHeadless()  && !g_application.CreateGUI())
   {
     CMessagePrinter::DisplayError("ERROR: Unable to create GUI. Exiting");
     return status;

@@ -322,6 +322,16 @@ public:
     return m_bPlatformDirectories;
   }
 
+  void SetHeadless(bool value)
+  {
+     _headless = value;
+  }
+
+  bool IsHeadless() const
+  {
+    return m_headless;
+  }
+
   void SetStandAlone(bool value);
 
   bool IsStandAlone()
@@ -464,6 +474,7 @@ protected:
   bool m_skipGuiRender;
 
   bool m_bStandalone;
+  bool m_headless;
   bool m_bTestMode;
   bool m_bSystemScreenSaverEnable;
 

@@ -90,6 +90,8 @@ void CAppParamParser::ParseArg(const std::string &arg)
     DisplayHelp();
   else if (arg == "-v" || arg == "--version")
     DisplayVersion();
+  else if (arg == "--headless")
+    g_application.SetHeadless(true);
   else if (arg == "--standalone")
     g_application.SetStandAlone(true);
   else if (arg == "-p" || arg  == "--portable")
